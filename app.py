@@ -1,6 +1,7 @@
 from tkinter import *
 import PIL
 from PIL import ImageDraw
+import matplotlib.pyplot as plt
 
 import numpy as np
 import tensorflow as tf
@@ -10,17 +11,17 @@ import os
 class App:
     def __init__(self):
 
-        #self.model = tf.keras.models.load_model('model.h5')
+        self.model = tf.keras.models.load_model('model.h5')
 
         self.old_x = None
         self.old_y = None
 
-        self.brush_size = 10
+        self.brush_size = 15
 
         self.root = Tk()
         self.root.title("Digit Recognition Application")
 
-        self.canvas = Canvas(self.root, width=500, height=500, bg="white")
+        self.canvas = Canvas(self.root, width=300, height=300, bg="white")
         self.canvas.pack()
 
         self.canvas.bind("<B1-Motion>", self.draw)
@@ -36,11 +37,16 @@ class App:
         self.clear_button.grid(row=0, column=2)
 
 
+        self.prediction_label = Label(self.root, text="Prediction: ")
+        self.prediction_label.pack(fill=X)
+
+
         self.root.mainloop()
 
 
     def clear(self):
         self.canvas.delete("all")
+        self.prediction_label.config(text="Prediction: ")
 
 
     def draw(self, event):
@@ -48,7 +54,7 @@ class App:
             self.canvas.create_line(self.old_x, 
                                     self.old_y, 
                                     event.x, 
-                                    event.y, 
+                                    event.y,
                                     fill='black', 
                                     width=self.brush_size,
                                     capstyle=ROUND,
@@ -63,7 +69,21 @@ class App:
 
 
     def predict(self):
-        pass
+        filename = "file_name"
+        self.canvas.update()
+        self.canvas.postscript(file=filename+".ps", colormode='color')
+        img = PIL.Image.open(filename+".ps")
+
+        inverted_image = PIL.ImageOps.invert(img)
+        img_gray = inverted_image.convert("L")
+
+        img_gray_resized = img_gray.resize((28, 28), PIL.Image.LANCZOS)
+
+        x = np.array(img_gray_resized)
+        x = x.reshape(1, 28, 28, -1)
+
+        y_pred = np.argmax(self.model.predict(x))
+        self.prediction_label.config(text="Prediction: " + str(y_pred))
 
 
 
